@@ -92,12 +92,4 @@ index 9ef5a656..907af640 100644
          axon = bittensor.axon(
              config = config,
              wallet = wallet,
-@@ -336,7 +352,6 @@ def serve(
- 
-     # ---.
-     while True:
--        
-         iteration = 0
-         local_data = {}
-         nn = subtensor.neuron_for_pubkey(wallet.hotkey.ss58_address)
-         
+             
