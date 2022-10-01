@@ -1,0 +1,102 @@
+diff --git a/bittensor/_neuron/text/core_server/__init__.py b/bittensor/_neuron/text/core_server/__init__.py
+index e1ee4c17..6fe5044c 100644
+--- a/bittensor/_neuron/text/core_server/__init__.py
++++ b/bittensor/_neuron/text/core_server/__init__.py
+@@ -107,6 +107,7 @@ class neuron:
+         )
+ 
+         self.model = server(config = config)
++        self.model.share_memory()
+         self.config = config
+ 
+         self.subtensor = subtensor
+@@ -114,7 +115,7 @@ class neuron:
+         self.axon = axon
+         self.metagraph = metagraph
+ 
+-    def run(self):
++    def run(self, hotkey_number = None):
+         serve(
+             self.config,
+             self.model,
+@@ -122,6 +123,7 @@ class neuron:
+             wallet = self.wallet,
+             axon = self.axon,
+             metagraph= self.metagraph,
++            hotkey_number= hotkey_number,
+         )
+ 
+ 
+diff --git a/bittensor/_neuron/text/core_server/multi.py b/bittensor/_neuron/text/core_server/multi.py
+new file mode 100644
+index 00000000..8943d2f3
+--- /dev/null
++++ b/bittensor/_neuron/text/core_server/multi.py
+@@ -0,0 +1,14 @@
++import sys
++import torch.multiprocessing as mp
++import bittensor
++
++def run(server, hotkey_number):
++    server.run(hotkey_number=hotkey_number);
++
++if __name__ == "__main__":
++    bittensor.utils.version_checking()
++    server_instance = bittensor.neurons.core_server.neuron()
++    mp.set_start_method('spawn', force=True)
++    for n in range(int(sys.argv[1])):
++        ps = mp.Process(target=run, args=(server_instance, str(n+1)))
++        ps.start()
+diff --git a/bittensor/_neuron/text/core_server/run.py b/bittensor/_neuron/text/core_server/run.py
+index 9ef5a656..907af640 100644
+--- a/bittensor/_neuron/text/core_server/run.py
++++ b/bittensor/_neuron/text/core_server/run.py
+@@ -43,6 +43,7 @@ def serve(
+         wallet = None,
+         axon= None,
+         metagraph = None,
++        hotkey_number = None,
+     ):
+     config.to_defaults()
+     model= model.to(model.device)
+@@ -51,7 +52,9 @@ def serve(
+     subtensor = bittensor.subtensor(config = config) if subtensor == None else subtensor
+ 
+     # Load/Create our bittensor wallet.
+-    if wallet == None:
++    if wallet == None and hotkey_number:
++        wallet = bittensor.wallet( hotkey=hotkey_number, config = config ).create().reregister(subtensor=subtensor) 
++    elif wallet == None:
+         wallet = bittensor.wallet( config = config ).create().reregister(subtensor=subtensor) 
+     else:
+         wallet.reregister(subtensor=subtensor)
+@@ -296,7 +299,20 @@ def serve(
+         return response_tensors, response_codes, response_messages
+ 
+     # Create our axon server and subscribe it to the network.
+-    if axon == None:
++    if axon == None and hotkey_number:
++        axon = bittensor.axon(
++            config = config,
++            wallet = wallet,
++            port = int(config.axon.port)-1+int(hotkey_number),
++            synapse_checks=synapse_check,
++            synapse_last_hidden = forward_hidden_state if model.config.neuron.lasthidden else None,
++            synapse_causal_lm = forward_casual_lm if model.config.neuron.causallm else None,
++            synapse_causal_lm_next = forward_casual_lm_next if model.config.neuron.causallmnext else None,
++            synapse_seq_2_seq = forward_generate if model.config.neuron.seq2seq else None ,
++            blacklist = blacklist if not model.config.neuron.disable_blacklist else None,
++            priority = priority if not model.config.neuron.disable_priority else None,
++        ).start().serve(subtensor=subtensor)
++    elif axon == None:
+         axon = bittensor.axon(
+             config = config,
+             wallet = wallet,
+@@ -336,7 +352,6 @@ def serve(
+ 
+     # ---.
+     while True:
+-        
+         iteration = 0
+         local_data = {}
+         nn = subtensor.neuron_for_pubkey(wallet.hotkey.ss58_address)
