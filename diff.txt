@@ -4,7 +4,6 @@ index e1ee4c17..6fe5044c 100644
 +++ b/bittensor/_neuron/text/core_server/__init__.py
 @@ -107,6 +107,7 @@ class neuron:
          )
- 
          self.model = server(config = config)
 +        self.model.share_memory()
          self.config = config
@@ -25,8 +24,6 @@ index e1ee4c17..6fe5044c 100644
              metagraph= self.metagraph,
 +            hotkey_number= hotkey_number,
          )
- 
- 
 diff --git a/bittensor/_neuron/text/core_server/multi.py b/bittensor/_neuron/text/core_server/multi.py
 new file mode 100644
 index 00000000..8943d2f3
@@ -61,7 +58,6 @@ index 9ef5a656..907af640 100644
      model= model.to(model.device)
 @@ -51,7 +52,9 @@ def serve(
      subtensor = bittensor.subtensor(config = config) if subtensor == None else subtensor
- 
      # Load/Create our bittensor wallet.
 -    if wallet == None:
 +    if wallet == None and hotkey_number:
@@ -72,7 +68,6 @@ index 9ef5a656..907af640 100644
          wallet.reregister(subtensor=subtensor)
 @@ -296,7 +299,20 @@ def serve(
          return response_tensors, response_codes, response_messages
- 
      # Create our axon server and subscribe it to the network.
 -    if axon == None:
 +    if axon == None and hotkey_number:
@@ -93,7 +88,6 @@ index 9ef5a656..907af640 100644
              config = config,
              wallet = wallet,
 @@ -336,7 +352,6 @@ def serve(
- 
      # ---.
      while True:
 -        
