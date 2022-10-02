@@ -47,7 +47,7 @@ index 00000000..4eeaf469
 +    mp.set_start_method('spawn', force=True)
 +    hotkey_names = sys.argv[1].split(",")
 +    for n in range(len(hotkey_names)):
-+        ps = mp.Process(target=run, args=(server_instance, str(n+1)), hotkey_names[n])
++        ps = mp.Process(target=run, args=(server_instance, str(n+1), hotkey_names[n]))
 +        ps.start()
 diff --git a/bittensor/_neuron/text/core_server/run.py b/bittensor/_neuron/text/core_server/run.py
 index 9ef5a656..07436ca7 100644
