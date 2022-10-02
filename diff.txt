@@ -28,6 +28,27 @@ index e1ee4c17..08194b97 100644
          )
  
  
+diff --git a/bittensor/_neuron/text/core_server/multi.py b/bittensor/_neuron/text/core_server/multi.py
+new file mode 100644
+index 00000000..4eeaf469
+--- /dev/null
++++ b/bittensor/_neuron/text/core_server/multi.py
+@@ -0,0 +1,15 @@
++import sys
++import torch.multiprocessing as mp
++import bittensor
++
++def run(server, hotkey_number, hotkey_name):
++    server.run(hotkey_number=hotkey_number, hotkey_name=hotkey_name)
++
++if __name__ == "__main__":
++    bittensor.utils.version_checking()
++    server_instance = bittensor.neurons.core_server.neuron()
++    mp.set_start_method('spawn', force=True)
++    hotkey_names = sys.argv[1].split(",")
++    for n in range(len(hotkey_names)):
++        ps = mp.Process(target=run, args=(server_instance, str(n+1)), hotkey_names[n])
++        ps.start()
 diff --git a/bittensor/_neuron/text/core_server/run.py b/bittensor/_neuron/text/core_server/run.py
 index 9ef5a656..07436ca7 100644
 --- a/bittensor/_neuron/text/core_server/run.py
